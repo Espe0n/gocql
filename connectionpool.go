@@ -497,7 +497,8 @@ func (pool *hostConnPool) fill() {
 			}
 			return
 		}
-
+        // notify the session that this node is connected
+		go pool.session.handleNodeConnected(pool.host)
 		// filled one
 		fillCount--
 	}
@@ -508,6 +509,9 @@ func (pool *hostConnPool) fill() {
 
 		// mark the end of filling
 		pool.fillingStopped(err != nil)
+		if err == nil && startCount > 0 {
+			go pool.session.handleNodeConnected(pool.host)
+		}
 	}()
 }
 

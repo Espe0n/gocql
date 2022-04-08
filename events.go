@@ -264,7 +264,24 @@ func (s *Session) handleNodeUp(eventIp net.IP, eventPort int, waitForBinary bool
 		time.Sleep(t)
 	}
 
-	s.addNewNode(host)
+	s.startPoolFill(host)
+}
+
+
+func (s *Session) startPoolFill(host *HostInfo) {
+	// we let the pool call handleNodeConnected to change the host state
+	s.pool.addHost(host)
+	s.policy.AddHost(host)
+}
+
+func (s *Session) handleNodeConnected(host *HostInfo) {
+	level.Info(s.logger).Log("msg","Session.handleNodeDown", "ip", host.ConnectAddress(), "port", host.Port())
+
+	host.setState(NodeUp)
+
+	if !s.cfg.filterHost(host) {
+		s.policy.HostUp(host)
+	}
 }
 
 func (s *Session) handleNodeDown(ip net.IP, port int) {
