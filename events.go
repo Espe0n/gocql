@@ -275,7 +275,7 @@ func (s *Session) startPoolFill(host *HostInfo) {
 }
 
 func (s *Session) handleNodeConnected(host *HostInfo) {
-	level.Info(s.logger).Log("msg","Session.handleNodeDown", "ip", host.ConnectAddress(), "port", host.Port())
+	level.Info(s.logger).Log("msg","Session.handleNodeConnected", "ip", host.ConnectAddress(), "port", host.Port())
 
 	host.setState(NodeUp)
 
@@ -285,7 +285,7 @@ func (s *Session) handleNodeConnected(host *HostInfo) {
 }
 
 func (s *Session) handleNodeDown(ip net.IP, port int) {
-	level.Info(s.logger).Log("msg", "Session.handleNodeDown", "ip", ip.String(), "port", port)
+	level.Info(s.logger).Log("msg", "SessionNodeRemove", "ip", ip.String(), "port", port)
 
 	host := s.ring.getHost(ip)
 	if host == nil {
@@ -296,7 +296,11 @@ func (s *Session) handleNodeDown(ip net.IP, port int) {
 		return
 	}
 
-	host.setState(NodeDown)
-	s.policy.HostDown(host)
-	s.pool.hostDown(ip)
+	s.policy.RemoveHost(host)
+	s.pool.removeHost(ip)
+	s.ring.removeHost(ip)
+
+	if !s.cfg.IgnorePeerAddr {
+		s.hostSource.refreshRing()
+	}
 }
